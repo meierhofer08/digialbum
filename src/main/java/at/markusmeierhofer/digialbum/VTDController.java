@@ -65,6 +65,7 @@ public class VTDController {
     private List<VTDEntry> entries;
     private Map<String, String> settings;
     private int currentPosition = 0;
+    private VTDConfig config = VTDConfig.DEFAULT;
 
     @FXML
     void settingsBtnActionPerformed(ActionEvent event) {
@@ -106,7 +107,6 @@ public class VTDController {
     private void loadData() {
         VTDDataAccess dataReader = VTDDataAccess.getInstance();
         entries = dataReader.loadData();
-        settings = dataReader.loadSettings();
     }
 
     private void injectionCheck() {
@@ -143,7 +143,7 @@ public class VTDController {
         loadImage(leftEntry, leftImageview);
         loadImage(rightEntry, rightImageview);
         checkDisable();
-        if (settings.get(VTDDataAccess.SETTING_ANIMATIONS) != null && settings.get(VTDDataAccess.SETTING_ANIMATIONS).equals("1")) {
+        if (config.isUseAnimations()) {
             new MultiImageAnimator(IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, leftImageview, rightImageview).start();
         }
     }

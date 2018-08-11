@@ -28,8 +28,6 @@ public class VTDDataAccess {
         config = VTDConfig.DEFAULT;
     }
 
-    public final static String SETTING_ANIMATIONS = "show_animations";
-
     public List<VTDEntry> loadData() {
         List<VTDEntry> entries = null;
         try {
@@ -43,21 +41,6 @@ public class VTDDataAccess {
             e.printStackTrace();
         }
         return entries;
-    }
-
-    public Map<String, String> loadSettings() {
-        Map<String, String> settingsMap = new HashMap<>();
-        try {
-            FileReader fileReader = new FileReader(config.getBackupFilename());
-            char animationsValue = (char) fileReader.read();
-            fileReader.close();
-            settingsMap.put(SETTING_ANIMATIONS, String.valueOf(animationsValue));
-        } catch (IOException e) {
-            e.printStackTrace();
-            settingsMap.put(SETTING_ANIMATIONS, "1");
-        }
-
-        return settingsMap;
     }
 
     public void saveData(List<VTDEntry> entries) {
