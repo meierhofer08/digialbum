@@ -6,9 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by MM on 12.02.2017.
@@ -31,6 +29,7 @@ public class VTDDataAccess {
     public List<VTDEntry> loadData() {
         List<VTDEntry> entries = null;
         try {
+            //noinspection unchecked
             entries = (ArrayList<VTDEntry>) new ObjectInputStream(new FileInputStream(new File(config.getDataFilename()))).readObject();
             if (entries != null) {
                 entries.forEach(VTDEntry::read);

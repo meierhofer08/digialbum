@@ -153,15 +153,13 @@ public class VTDController {
             try {
                 imageView.setFitWidth(IMAGE_FIT_WIDTH);
                 imageView.setFitHeight(IMAGE_FIT_HEIGHT);
-                String imageString;
-                if (entry.getImageUrl().getValueSafe().contains("\\")) {
-                    File imageFile = new File(entry.getImageUrl().getValueSafe());
-                    imageString = imageFile.toURI().toString();
-                } else {
-                    imageString = entry.getImageUrl().getValueSafe();
+                String imageString = entry.getImageUrl().getValueSafe();
+                if (!entry.getImageUrl().getValueSafe().contains(":\\")) {
+                    imageString = config.getBasePath() + imageString;
                 }
-                if (imageString != null && !imageString.isEmpty()) {
-                    imageView.setImage(new Image(imageString, IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
+                if (!imageString.isEmpty()) {
+                    imageView.setImage(new Image(new File(imageString).toURI().toString(),
+                            IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
                             true, true));
                 } else {
                     imageView.setImage(null);

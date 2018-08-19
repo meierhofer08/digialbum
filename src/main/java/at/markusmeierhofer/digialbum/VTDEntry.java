@@ -32,24 +32,27 @@ public class VTDEntry implements Serializable {
         return headerProperty;
     }
 
-    public void setHeader(String header) {
-        this.headerProperty.setValue(header);
-    }
-
     public StringProperty getImageUrl() {
         return imageUrlProperty;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrlProperty.setValue(imageUrl);
     }
 
     public StringProperty getText() {
         return textProperty;
     }
 
-    public void setText(String text) {
+    public VTDEntry setHeader(String header) {
+        this.headerProperty.setValue(header);
+        return this;
+    }
+
+    public VTDEntry setImageUrl(String imageUrl) {
+        this.imageUrlProperty.setValue(imageUrl);
+        return this;
+    }
+
+    public VTDEntry setText(String text) {
         this.textProperty.setValue(text);
+        return this;
     }
 
     @Override
