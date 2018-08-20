@@ -9,9 +9,10 @@ import javafx.stage.Stage;
 public class Main extends Application {
 
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start(Stage primaryStage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("/vtd.fxml"));
-        primaryStage.setTitle("Unsere Geschichte");
+        VTDConfig config = VTDConfig.getInstance();
+        primaryStage.setTitle(config.getHeaderText());
         primaryStage.setScene(new Scene(root, 1000, 710));
         primaryStage.show();
     }

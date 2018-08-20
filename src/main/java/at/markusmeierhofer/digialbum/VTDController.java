@@ -12,13 +12,12 @@ import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
 
 public class VTDController {
     public final static int IMAGE_CONTAINER_WIDTH = 1024;
@@ -27,19 +26,16 @@ public class VTDController {
     public final static int IMAGE_FIT_HEIGHT = 425;
 
     @FXML
-    private ResourceBundle resources;
-
-    @FXML
-    private URL location;
+    private Label headerLbl;
 
     @FXML
     private ImageView rightImageview;
 
     @FXML
-    private Label leftDateLabel;
+    private ImageView leftImageview;
 
     @FXML
-    private ImageView leftImageview;
+    private Label leftDateLabel;
 
     @FXML
     private TextArea rightTextarea;
@@ -51,10 +47,10 @@ public class VTDController {
     private Button backBtn;
 
     @FXML
-    private Button settingsBtn;
+    private Label rightDateLabel;
 
     @FXML
-    private Label rightDateLabel;
+    private Button settingsBtn;
 
     @FXML
     private TextArea leftTextarea;
@@ -62,10 +58,11 @@ public class VTDController {
     @FXML
     private Button nextBtn;
 
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private List<VTDEntry> entries;
-    private Map<String, String> settings;
-    private int currentPosition = 0;
-    private VTDConfig config = VTDConfig.DEFAULT;
+    private int currentPosition;
+    private VTDConfig config;
 
     @FXML
     void settingsBtnActionPerformed(ActionEvent event) {
@@ -76,7 +73,7 @@ public class VTDController {
             stage.setTitle("Einstellungen");
             stage.show();
         } catch (IOException ex) {
-            System.out.println(ex.getMessage());
+            LOGGER.catching(ex);
         }
     }
 
@@ -99,6 +96,9 @@ public class VTDController {
 
     @FXML
     void initialize() {
+        config = VTDConfig.getInstance();
+        headerLbl.setText(config.getHeaderText());
+        currentPosition = 0;
         loadData();
         injectionCheck();
         showEntryPage(!entries.isEmpty() ? entries.get(0) : null, entries.size() > 0 ? entries.get(1) : null);

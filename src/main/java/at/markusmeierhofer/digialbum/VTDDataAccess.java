@@ -1,5 +1,8 @@
 package at.markusmeierhofer.digialbum;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,10 +23,12 @@ public class VTDDataAccess {
         return InstanceHolder.INSTANCE;
     }
 
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private VTDConfig config;
 
     private VTDDataAccess() {
-        config = VTDConfig.DEFAULT;
+        config = VTDConfig.getInstance();
     }
 
     public List<VTDEntry> loadData() {
@@ -37,7 +42,7 @@ public class VTDDataAccess {
         } catch (FileNotFoundException e) {
             entries = new ArrayList<>();
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            LOGGER.catching(e);
         }
         return entries;
     }
@@ -72,7 +77,7 @@ public class VTDDataAccess {
             }
             fw.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.catching(e);
         }
     }
 }
