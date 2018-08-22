@@ -1,14 +1,14 @@
 package at.markusmeierhofer.digialbum;
 
 import javafx.application.Platform;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
@@ -17,13 +17,21 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class VTDController {
-    public final static int IMAGE_CONTAINER_WIDTH = 1024;
-    public final static int IMAGE_CONTAINER_HEIGHT = 768;
-    public final static int IMAGE_FIT_WIDTH = 480;
-    public final static int IMAGE_FIT_HEIGHT = 425;
+    private static final int IMAGE_CONTAINER_WIDTH = 1024;
+    private static final int IMAGE_CONTAINER_HEIGHT = 768;
+    private static final int IMAGE_FIT_WIDTH = 480;
+    private static final int IMAGE_FIT_HEIGHT = 425;
+
+    // For previews
+    private static final int PREVIEW_FIT_WIDTH = 100;
+    private static final int PREVIEW_WIDTH = 100;
+    private static final int PREVIEW_HEIGHT = 200;
 
     @FXML
     private Label headerLbl;
@@ -39,6 +47,9 @@ public class VTDController {
 
     @FXML
     private TextArea rightTextarea;
+
+    @FXML
+    private ListView<VTDEntry> imagePreviewList;
 
     @FXML
     private Button closeBtn;
@@ -101,7 +112,55 @@ public class VTDController {
         currentPosition = 0;
         loadData();
         injectionCheck();
+        initializeListView();
         showEntryPage(!entries.isEmpty() ? entries.get(0) : null, entries.size() > 0 ? entries.get(1) : null);
+    }
+
+    private void initializeListView() {
+        Map<VTDEntry, ImageView> preloadedImages = getPreloadedImages(entries);
+
+        imagePreviewList.setItems(FXCollections.unmodifiableObservableList(FXCollections.observableArrayList(entries)));
+        imagePreviewList.setCellFactory((ListView<VTDEntry> param) -> new ListCell<VTDEntry>() {
+            @Override
+            protected void updateItem(VTDEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(preloadedImages.get(item));
+                    setText(item.getHeader().getValueSafe());
+                }
+            }
+        });
+        imagePreviewList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        imagePreviewList.getSelectionModel().selectedItemProperty().addListener(
+                (ObservableValue<? extends VTDEntry> observable, VTDEntry oldValue, VTDEntry newValue) ->
+                        showEntryPageFromPreviewEntry(newValue));
+    }
+
+    private void showEntryPageFromPreviewEntry(VTDEntry selectedPreviewEntry) {
+        if (entries.indexOf(selectedPreviewEntry) == -1) {
+            return;
+        }
+        int index = entries.indexOf(selectedPreviewEntry);
+        if (entries.indexOf(selectedPreviewEntry) % 2 == 0) { // If it's an even index - show the image and its next image
+            currentPosition = index;
+            VTDEntry nextEntry = entries.size() > (index + 1) ? entries.get(index + 1) : null;
+            showEntryPage(selectedPreviewEntry, nextEntry);
+        } else { // it's an uneven index - show the image and its previous image
+            currentPosition = index - 1;
+            showEntryPage(entries.get(index - 1), selectedPreviewEntry);
+        }
+    }
+
+    private Map<VTDEntry, ImageView> getPreloadedImages(List<VTDEntry> entries) {
+        return entries.stream()
+                .map(entry -> {
+                    ImageView previewImageView = new ImageView();
+                    loadPreviewImage(entry, previewImageView);
+                    return new AbstractMap.SimpleEntry<>(entry, previewImageView);
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private void loadData() {
@@ -140,26 +199,42 @@ public class VTDController {
             rightTextarea.setText("");
             rightImageview.setImage(null);
         }
-        loadImage(leftEntry, leftImageview);
-        loadImage(rightEntry, rightImageview);
+        loadFullSizeImage(leftEntry, leftImageview);
+        loadFullSizeImage(rightEntry, rightImageview);
         checkDisable();
         if (config.isUseAnimations()) {
             new MultiImageAnimator(IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, leftImageview, rightImageview).start();
         }
     }
 
-    private void loadImage(VTDEntry entry, ImageView imageView) {
+    private ImageView loadPreviewImage(VTDEntry entry, ImageView imageView) {
+        loadImage(entry, imageView, PREVIEW_FIT_WIDTH, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT, false,
+                true);
+        return imageView;
+    }
+
+    private void loadFullSizeImage(VTDEntry entry, ImageView imageView) {
+        loadImage(entry, imageView, IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
+                true, false);
+    }
+
+    private void loadImage(VTDEntry entry, ImageView imageView, double fitWidth, double fitHeight, double requestedWidth,
+                           double requestedHeight, boolean smooth, boolean backgroundLoading) {
         if (entry != null) {
             try {
-                imageView.setFitWidth(IMAGE_FIT_WIDTH);
-                imageView.setFitHeight(IMAGE_FIT_HEIGHT);
+                if (fitWidth > 0) {
+                    imageView.setFitWidth(fitWidth);
+                }
+                if (fitHeight > 0) {
+                    imageView.setFitHeight(fitHeight);
+                }
                 String imageString = entry.getImageUrl().getValueSafe();
                 if (!entry.getImageUrl().getValueSafe().contains(":\\")) {
                     imageString = config.getBasePath() + imageString;
                 }
                 if (!imageString.isEmpty()) {
                     imageView.setImage(new Image(new File(imageString).toURI().toString(),
-                            IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
+                            requestedWidth, requestedHeight,
                             true, true));
                 } else {
                     imageView.setImage(null);
