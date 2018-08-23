@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="710.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="at.markusmeierhofer.digialbum.VTDController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="710.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="at.markusmeierhofer.digialbum.VTDController">
    <children>
       <SplitPane dividerPositions="0.00501002004008016" pickOnBounds="false" prefHeight="710.0" prefWidth="1000.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <items>
@@ -50,6 +50,7 @@
                                     <Insets />
                                  </GridPane.margin>
                               </ImageView>
+                              <Label fx:id="leftPlaceholder" visible="false" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
                               <Label fx:id="leftDateLabel" alignment="CENTER" prefHeight="32.0" prefWidth="501.0" text="Mai 2016">
                                  <font>
                                     <Font name="Book Antiqua" size="24.0" />
@@ -77,6 +78,7 @@
                                     <Font name="Book Antiqua" size="24.0" />
                                  </font>
                               </Label>
+                              <Label fx:id="rightPlaceholder" visible="false" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
                               <ImageView fx:id="rightImageview" fitHeight="425.0" fitWidth="480.0" pickOnBounds="true" preserveRatio="true" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
                               <TextArea fx:id="rightTextarea" editable="false" prefHeight="151.0" prefWidth="577.0" wrapText="true" GridPane.rowIndex="2">
                                  <GridPane.margin>

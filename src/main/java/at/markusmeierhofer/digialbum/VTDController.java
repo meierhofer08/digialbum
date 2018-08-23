@@ -1,5 +1,8 @@
 package at.markusmeierhofer.digialbum;
 
+import at.markusmeierhofer.digialbum.config.VTDConfig;
+import at.markusmeierhofer.digialbum.dataaccess.DataFileNotFoundException;
+import at.markusmeierhofer.digialbum.dataaccess.VTDDataAccess;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -9,6 +12,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
@@ -17,9 +21,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class VTDController {
@@ -32,6 +34,14 @@ public class VTDController {
     private static final int PREVIEW_FIT_WIDTH = 100;
     private static final int PREVIEW_WIDTH = 100;
     private static final int PREVIEW_HEIGHT = 200;
+
+    // Text strings
+    private static final String NO_MORE_PICTURE_PRESENT = "Kein weiteres Bild vorhanden!";
+    private static final String PICTURE_NOT_FOUND = "Bild nicht gefunden!";
+    private static final String DATAFILE_NOT_FOUND_HEADER = "VTDData nicht gefunden";
+    private static final String DATAFILE_NOT_FOUND = "Die Datei VTDData.dat wurde nicht im Basispfad %s gefunden!\n" +
+            "Bitte setzen sie den korrekten Basispfad oder erstellen Sie die Datei durch hinzufügen von Bildern " +
+            "in den Einstellungen.";
 
     @FXML
     private Label headerLbl;
@@ -69,11 +79,19 @@ public class VTDController {
     @FXML
     private Button nextBtn;
 
+    @FXML
+    private Label leftPlaceholder;
+
+    @FXML
+    private Label rightPlaceholder;
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     private List<VTDEntry> entries;
     private int currentPosition;
     private VTDConfig config;
+    private VTDEntry currentLeftEntry;
+    private VTDEntry currentRightEntry;
 
     @FXML
     void settingsBtnActionPerformed(ActionEvent event) {
@@ -82,7 +100,13 @@ public class VTDController {
             Stage stage = new Stage();
             stage.setScene(new Scene(root));
             stage.setTitle("Einstellungen");
-            stage.show();
+            stage.showAndWait();
+            if (SettingsSaved.areSettingsSaved()) {
+                LOGGER.info("ReInit Main View");
+                reInit();
+            } else {
+                LOGGER.info("Don't reInit Main View");
+            }
         } catch (IOException ex) {
             LOGGER.catching(ex);
         }
@@ -107,35 +131,58 @@ public class VTDController {
 
     @FXML
     void initialize() {
-        config = VTDConfig.getInstance();
-        headerLbl.setText(config.getHeaderText());
-        currentPosition = 0;
-        loadData();
         injectionCheck();
-        initializeListView();
-        showEntryPage(!entries.isEmpty() ? entries.get(0) : null, entries.size() > 0 ? entries.get(1) : null);
+        firstInit();
+        reInit();
     }
 
-    private void initializeListView() {
-        Map<VTDEntry, ImageView> preloadedImages = getPreloadedImages(entries);
+    private void reInit() {
+        currentPosition = 0;
+        currentLeftEntry = null;
+        currentRightEntry = null;
+        loadData();
+        initializeImagePreviews();
+        showEntryPage(!entries.isEmpty() ? entries.get(0) : null, entries.size() > 1 ? entries.get(1) : null);
+    }
 
-        imagePreviewList.setItems(FXCollections.unmodifiableObservableList(FXCollections.observableArrayList(entries)));
+    private void firstInit() {
+        config = VTDConfig.getInstance();
+        headerLbl.setText(config.getHeaderText());
+    }
+
+    private void initializeImagePreviews() {
+        Map<VTDEntry, Optional<ImageView>> preloadedImages = getPreloadedImages(entries);
+
+        imagePreviewList.setItems(FXCollections.emptyObservableList());
+        imagePreviewList.setCellFactory(null);
+        imagePreviewList.scrollTo(0);
+        imagePreviewList.setItems(FXCollections.observableArrayList(entries));
         imagePreviewList.setCellFactory((ListView<VTDEntry> param) -> new ListCell<VTDEntry>() {
             @Override
-            protected void updateItem(VTDEntry item, boolean empty) {
-                super.updateItem(item, empty);
+            protected void updateItem(VTDEntry entry, boolean empty) {
+                super.updateItem(entry, empty);
                 if (empty) {
                     setGraphic(null);
                 } else {
-                    setGraphic(preloadedImages.get(item));
-                    setText(item.getHeader().getValueSafe());
+                    Optional<ImageView> previewImage = preloadedImages.get(entry);
+                    if (previewImage != null && previewImage.isPresent()) {
+                        setGraphic(previewImage.get());
+                        setText(entry.getHeader().getValueSafe());
+                    } else {
+                        setGraphic(null);
+                        setText(getPictureNotFoundText(entry));
+                    }
                 }
             }
         });
         imagePreviewList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         imagePreviewList.getSelectionModel().selectedItemProperty().addListener(
                 (ObservableValue<? extends VTDEntry> observable, VTDEntry oldValue, VTDEntry newValue) ->
-                        showEntryPageFromPreviewEntry(newValue));
+                {
+                    if (!Objects.equals(currentLeftEntry, newValue) && !Objects.equals(currentRightEntry, newValue)) {
+                        showEntryPageFromPreviewEntry(newValue);
+                    }
+                });
     }
 
     private void showEntryPageFromPreviewEntry(VTDEntry selectedPreviewEntry) {
@@ -153,19 +200,22 @@ public class VTDController {
         }
     }
 
-    private Map<VTDEntry, ImageView> getPreloadedImages(List<VTDEntry> entries) {
+    private Map<VTDEntry, Optional<ImageView>> getPreloadedImages(List<VTDEntry> entries) {
+        Label dummyPlaceholder = new Label();
         return entries.stream()
-                .map(entry -> {
-                    ImageView previewImageView = new ImageView();
-                    loadPreviewImage(entry, previewImageView);
-                    return new AbstractMap.SimpleEntry<>(entry, previewImageView);
-                })
+                .map(entry -> new AbstractMap.SimpleEntry<>(entry,
+                        loadPreviewImage(entry, new ImageView(), dummyPlaceholder)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private void loadData() {
         VTDDataAccess dataReader = VTDDataAccess.getInstance();
-        entries = dataReader.loadData();
+        try {
+            entries = dataReader.loadData();
+        } catch (DataFileNotFoundException e) {
+            entries = new ArrayList<>();
+            showDataFileNotFoundAlert();
+        }
     }
 
     private void injectionCheck() {
@@ -184,13 +234,25 @@ public class VTDController {
         if (entries.size() > 0) {
             nextBtn.setDisable(currentPosition == entries.size() - 1 || currentPosition == entries.size() - 2);
             backBtn.setDisable(currentPosition == 0);
+        } else {
+            nextBtn.setDisable(true);
+            backBtn.setDisable(true);
         }
     }
 
     private void showEntryPage(VTDEntry leftEntry, VTDEntry rightEntry) {
-        leftImageview.setImage(null);
-        leftDateLabel.setText(leftEntry.getHeader().getValue());
-        leftTextarea.setText(leftEntry.getText().getValue());
+        currentLeftEntry = leftEntry;
+        currentRightEntry = rightEntry;
+
+        if (leftEntry != null) {
+            leftImageview.setImage(null);
+            leftDateLabel.setText(leftEntry.getHeader().getValue());
+            leftTextarea.setText(leftEntry.getText().getValue());
+        } else {
+            leftDateLabel.setText("");
+            leftTextarea.setText("");
+            leftImageview.setImage(null);
+        }
         if (rightEntry != null) {
             rightDateLabel.setText(rightEntry.getHeader().getValue());
             rightTextarea.setText(rightEntry.getText().getValue());
@@ -199,27 +261,32 @@ public class VTDController {
             rightTextarea.setText("");
             rightImageview.setImage(null);
         }
-        loadFullSizeImage(leftEntry, leftImageview);
-        loadFullSizeImage(rightEntry, rightImageview);
+        loadFullSizeImage(leftEntry, leftImageview, leftPlaceholder);
+        loadFullSizeImage(rightEntry, rightImageview, rightPlaceholder);
         checkDisable();
         if (config.isUseAnimations()) {
             new MultiImageAnimator(IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, leftImageview, rightImageview).start();
         }
     }
 
-    private ImageView loadPreviewImage(VTDEntry entry, ImageView imageView) {
-        loadImage(entry, imageView, PREVIEW_FIT_WIDTH, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT, false,
+    private Optional<ImageView> loadPreviewImage(VTDEntry entry, ImageView imageView, Label placeholder) {
+        boolean loaded = loadImage(entry, imageView, placeholder, PREVIEW_FIT_WIDTH, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT, false,
                 true);
-        return imageView;
+        if (loaded) {
+            return Optional.of(imageView);
+        } else {
+            return Optional.empty();
+        }
     }
 
-    private void loadFullSizeImage(VTDEntry entry, ImageView imageView) {
-        loadImage(entry, imageView, IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
+    private void loadFullSizeImage(VTDEntry entry, ImageView imageView, Label placeholder) {
+        loadImage(entry, imageView, placeholder, IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
                 true, false);
     }
 
-    private void loadImage(VTDEntry entry, ImageView imageView, double fitWidth, double fitHeight, double requestedWidth,
-                           double requestedHeight, boolean smooth, boolean backgroundLoading) {
+    private boolean loadImage(VTDEntry entry, ImageView imageView, Label placeholder, double fitWidth, double fitHeight, double requestedWidth,
+                              double requestedHeight, boolean smooth, boolean backgroundLoading) {
+        boolean loaded = false;
         if (entry != null) {
             try {
                 if (fitWidth > 0) {
@@ -228,34 +295,57 @@ public class VTDController {
                 if (fitHeight > 0) {
                     imageView.setFitHeight(fitHeight);
                 }
-                String imageString = entry.getImageUrl().getValueSafe();
-                if (!entry.getImageUrl().getValueSafe().contains(":\\")) {
-                    imageString = config.getBasePath() + imageString;
-                }
+                String imageString = getResolvedImageString(entry.getImageUrl().getValueSafe());
                 if (!imageString.isEmpty()) {
-                    imageView.setImage(new Image(new File(imageString).toURI().toString(),
-                            requestedWidth, requestedHeight,
-                            true, true));
+                    File imageFile = new File(imageString);
+                    if (imageFile.exists()) {
+                        imageView.setImage(new Image(imageFile.toURI().toString(),
+                                requestedWidth, requestedHeight,
+                                true, smooth, backgroundLoading));
+                        loaded = true;
+                    }
                 } else {
                     imageView.setImage(null);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error(e);
             }
+        } else {
+            imageView.setImage(null);
+        }
+
+        imageView.setVisible(loaded);
+        placeholder.setVisible(!loaded);
+        if (!loaded) {
+            placeholder.setText(getPictureNotFoundText(entry));
+        }
+
+        return loaded;
+    }
+
+    private String getResolvedImageString(String imageString) {
+        String resolvedImageString = imageString;
+        if (!resolvedImageString.contains(":\\")) {
+            resolvedImageString = config.getBasePath() + resolvedImageString;
+        }
+
+        return resolvedImageString;
+    }
+
+    private String getPictureNotFoundText(VTDEntry entry) {
+        if (entry == null) {
+            return NO_MORE_PICTURE_PRESENT;
+        } else {
+            return PICTURE_NOT_FOUND + " (" + getResolvedImageString(entry.getImageUrl().getValueSafe()) + ")";
         }
     }
 
-    private void showText(String text, TextArea textArea) {
-        textArea.setText(text);
-    }
+    private void showDataFileNotFoundAlert() {
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.setTitle(DATAFILE_NOT_FOUND_HEADER);
+        alert.setHeaderText(null);
+        alert.setContentText(String.format(DATAFILE_NOT_FOUND, config.getBasePath()));
 
-    private void increaseSize(ImageView imageView) {
-        imageView.setFitHeight(imageView.getFitHeight() + 100);
-        imageView.setFitWidth(imageView.getFitWidth() + 100);
-    }
-
-    private void decreaseSize(ImageView imageView) {
-        imageView.setFitHeight(imageView.getFitHeight() - 100);
-        imageView.setFitWidth(imageView.getFitWidth() - 100);
+        alert.showAndWait();
     }
 }

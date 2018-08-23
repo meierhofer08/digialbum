@@ -1,5 +1,8 @@
 package at.markusmeierhofer.digialbum;
 
+import at.markusmeierhofer.digialbum.config.VTDConfig;
+import at.markusmeierhofer.digialbum.dataaccess.DataFileNotFoundException;
+import at.markusmeierhofer.digialbum.dataaccess.VTDDataAccess;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -69,6 +72,7 @@ public class VTDSettingsController {
 
     private ObservableList<VTDEntry> entries = FXCollections.observableArrayList();
     private VTDDataAccess dataAccess;
+    private VTDConfig config;
 
     @FXML
     void addBtnActionPerformed(ActionEvent event) {
@@ -117,13 +121,18 @@ public class VTDSettingsController {
             imageUrlTF.setText(file.getAbsolutePath());
             VTDEntry selectedEntry = entryListView.getSelectionModel().getSelectedItem();
             if (selectedEntry != null) {
-                selectedEntry.setImageUrl(file.getAbsolutePath());
+                if (file.getParentFile().equals(new File(config.getBasePath()))) {
+                    selectedEntry.setImageUrl(file.getName());
+                } else {
+                    selectedEntry.setImageUrl(file.getAbsolutePath());
+                }
             }
         }
     }
 
     @FXML
     void saveBtnActionPerformed(ActionEvent event) {
+        SettingsSaved.setSettingsSaved(true);
         dataAccess.saveData(entries);
         close(event);
     }
@@ -144,16 +153,22 @@ public class VTDSettingsController {
         injectionCheck();
         loadButtonIcons();
         dataAccess = VTDDataAccess.getInstance();
+        config = VTDConfig.getInstance();
         reInit();
     }
 
     private void reInit() {
-        entries = FXCollections.observableArrayList(dataAccess.loadData());
+        try {
+            entries = FXCollections.observableArrayList(dataAccess.loadData());
+        } catch (DataFileNotFoundException e) {
+            entries = FXCollections.observableArrayList();
+        }
         removeBtn.setDisable(true);
         upBtn.setDisable(true);
         downBtn.setDisable(true);
         entryGridPane.setDisable(true);
         initEntryListView();
+        SettingsSaved.setSettingsSaved(false);
     }
 
     private void initEntryListView() {

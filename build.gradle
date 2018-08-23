@@ -21,3 +21,13 @@ jar {
         attributes 'Main-Class': 'at.markusmeierhofer.digialbum.Main'
     }
 }
+
+//create a single Jar with all dependencies
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'at.markusmeierhofer.digialbum.Main'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}

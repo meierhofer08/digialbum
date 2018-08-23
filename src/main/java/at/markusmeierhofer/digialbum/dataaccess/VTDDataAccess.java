@@ -1,5 +1,7 @@
-package at.markusmeierhofer.digialbum;
+package at.markusmeierhofer.digialbum.dataaccess;
 
+import at.markusmeierhofer.digialbum.VTDEntry;
+import at.markusmeierhofer.digialbum.config.VTDConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +33,7 @@ public class VTDDataAccess {
         config = VTDConfig.getInstance();
     }
 
-    public List<VTDEntry> loadData() {
+    public List<VTDEntry> loadData() throws DataFileNotFoundException {
         List<VTDEntry> entries = null;
         try {
             //noinspection unchecked
@@ -40,7 +42,8 @@ public class VTDDataAccess {
                 entries.forEach(VTDEntry::read);
             }
         } catch (FileNotFoundException e) {
-            entries = new ArrayList<>();
+            LOGGER.catching(e);
+            throw new DataFileNotFoundException();
         } catch (IOException | ClassNotFoundException e) {
             LOGGER.catching(e);
         }
