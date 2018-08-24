@@ -5,4 +5,6 @@ out
 DigiAlbum.iml
 VTDData.dat
 VTDData.txt
+VTDData.dat.bak
+VTDData.txt.bak
 VTDSettings.properties

@@ -1,11 +1,13 @@
 package at.markusmeierhofer.digialbum.gui.mainpage;
 
 import at.markusmeierhofer.digialbum.VTDEntry;
-import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettings;
+import at.markusmeierhofer.digialbum.bl.config.StringKey;
+import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
+import at.markusmeierhofer.digialbum.bl.constants.VTDConstants;
 import at.markusmeierhofer.digialbum.dl.DataFileNotFoundException;
 import at.markusmeierhofer.digialbum.dl.VTDDataAccess;
 import at.markusmeierhofer.digialbum.gui.helpers.MultiImageAnimator;
-import at.markusmeierhofer.digialbum.gui.settings.VTDSettingsController;
+import at.markusmeierhofer.digialbum.gui.settings.ManagePicturesController;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -38,14 +40,6 @@ public class VTDController {
     private static final int PREVIEW_FIT_WIDTH = 100;
     private static final int PREVIEW_WIDTH = 100;
     private static final int PREVIEW_HEIGHT = 200;
-
-    // Text strings
-    private static final String NO_MORE_PICTURE_PRESENT = "Kein weiteres Bild vorhanden!";
-    private static final String PICTURE_NOT_FOUND = "Bild nicht gefunden!";
-    private static final String DATAFILE_NOT_FOUND_HEADER = "VTDData nicht gefunden";
-    private static final String DATAFILE_NOT_FOUND = "Die Datei VTDData.dat wurde nicht im Basispfad %s gefunden!\n" +
-            "Bitte setzen sie den korrekten Basispfad oder erstellen Sie die Datei durch hinzufügen von Bildern " +
-            "in den Einstellungen.";
 
     @FXML
     private Label headerLbl;
@@ -93,7 +87,7 @@ public class VTDController {
 
     private List<VTDEntry> entries;
     private int currentPosition;
-    private VTDSettings settings;
+    private VTDConfig config;
     private VTDEntry currentLeftEntry;
     private VTDEntry currentRightEntry;
     private ExecutorService animationExecutor;
@@ -102,12 +96,12 @@ public class VTDController {
     @FXML
     void settingsBtnActionPerformed(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vtdsettings.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(VTDConstants.SETTINGS_FXML_NAME));
             Stage stage = new Stage();
             stage.setScene(new Scene(loader.load()));
-            stage.setTitle("Einstellungen");
+            stage.setTitle(config.getString(StringKey.DATA_PAGE_TITLE));
             stage.showAndWait();
-            VTDSettingsController settingsController = loader.getController();
+            ManagePicturesController settingsController = loader.getController();
             if (settingsController.areSettingsSaved()) {
                 LOGGER.info("ReInit Main View");
                 reInit();
@@ -153,8 +147,8 @@ public class VTDController {
     }
 
     private void firstInit() {
-        settings = VTDSettings.getInstance();
-        headerLbl.setText(settings.getHeaderText());
+        config = VTDConfig.getInstance();
+        headerLbl.setText(config.getSettings().getHeaderText());
         animationExecutor = Executors.newSingleThreadExecutor();
         imagePreviewList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         imagePreviewList.getSelectionModel().selectedItemProperty().addListener(
@@ -164,6 +158,14 @@ public class VTDController {
                         showEntryPageFromPreviewEntry(newValue);
                     }
                 });
+        initializeTexts();
+    }
+
+    private void initializeTexts() {
+        settingsBtn.setText(config.getString(StringKey.MAIN_PAGE_SETTINGS_BTN));
+        backBtn.setText(config.getString(StringKey.MAIN_PAGE_BACK_BTN));
+        nextBtn.setText(config.getString(StringKey.MAIN_PAGE_NEXT_BTN));
+        closeBtn.setText(config.getString(StringKey.MAIN_PAGE_CLOSE_BTN));
     }
 
     private void initializeImagePreviews() {
@@ -274,7 +276,7 @@ public class VTDController {
 
         double fitWidth;
         double fitHeight;
-        if (settings.isUseAnimations()) {
+        if (config.getSettings().isUseAnimations()) {
             if (currentMultiImageAnimator != null) {
                 currentMultiImageAnimator.stop();
             }
@@ -287,7 +289,7 @@ public class VTDController {
         }
         loadFullSizeImage(leftEntry, leftImageview, leftPlaceholder, fitWidth, fitHeight);
         loadFullSizeImage(rightEntry, rightImageview, rightPlaceholder, fitWidth, fitHeight);
-        if (settings.isUseAnimations()) {
+        if (config.getSettings().isUseAnimations()) {
             animationExecutor.execute(currentMultiImageAnimator);
         }
         checkDisable();
@@ -350,7 +352,7 @@ public class VTDController {
     private String getResolvedImageString(String imageString) {
         String resolvedImageString = imageString;
         if (!resolvedImageString.contains(":\\")) {
-            resolvedImageString = settings.getBasePath() + resolvedImageString;
+            resolvedImageString = config.getSettings().getBasePath() + resolvedImageString;
         }
 
         return resolvedImageString;
@@ -358,17 +360,17 @@ public class VTDController {
 
     private String getPictureNotFoundText(VTDEntry entry) {
         if (entry == null) {
-            return NO_MORE_PICTURE_PRESENT;
+            return config.getString(StringKey.MAIN_PAGE_IMAGE_VIEW_NO_MORE_PICTURES_AVAILABLE);
         } else {
-            return PICTURE_NOT_FOUND + " (" + getResolvedImageString(entry.getImageUrl().getValueSafe()) + ")";
+            return config.getString(StringKey.MAIN_PAGE_IMAGE_VIEW_PICTURE_NOT_FOUND) + " (" + getResolvedImageString(entry.getImageUrl().getValueSafe()) + ")";
         }
     }
 
     private void showDataFileNotFoundAlert() {
         Alert alert = new Alert(AlertType.ERROR);
-        alert.setTitle(DATAFILE_NOT_FOUND_HEADER);
+        alert.setTitle(config.getString(StringKey.MAIN_PAGE_DATA_FILE_NOT_FOUND_HEADER));
         alert.setHeaderText(null);
-        alert.setContentText(String.format(DATAFILE_NOT_FOUND, settings.getBasePath()));
+        alert.setContentText(String.format(config.getString(StringKey.MAIN_PAGE_DATA_FILE_NOT_FOUND_TEXT), config.getSettings().getBasePath()));
 
         alert.showAndWait();
     }

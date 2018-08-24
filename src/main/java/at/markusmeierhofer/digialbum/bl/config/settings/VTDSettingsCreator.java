@@ -1,5 +1,7 @@
 package at.markusmeierhofer.digialbum.bl.config.settings;
 
+import at.markusmeierhofer.digialbum.bl.config.StringKey;
+import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
 import javafx.scene.control.Alert;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,12 +11,6 @@ import java.io.IOException;
 
 public class VTDSettingsCreator {
     private static final Logger LOGGER = LogManager.getLogger();
-
-    // Text strings
-    private static final String SETTINGS_FILE_NOT_FOUND_HEADER = "VTDSettings nicht gefunden";
-    private static final String SETTINGS_FILE_NOT_FOUND = "Die Datei VTDSettings.properties, welche die "
-            + "Programmeinstellungen enthält, wurde nicht im aktuellen Ordner gefunden und wird daher mit den "
-            + "Standardwerten neu initialisiert.";
 
     private static boolean guiAvailable = false;
 
@@ -38,10 +34,11 @@ public class VTDSettingsCreator {
     }
 
     private static void showAlertForNotFoundSettings() {
+        VTDConfig config = VTDConfig.getInstance();
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(SETTINGS_FILE_NOT_FOUND_HEADER);
+        alert.setTitle(config.getString(StringKey.SETTINGS_CREATOR_SETTINGS_FILE_NOT_FOUND_HEADER));
         alert.setHeaderText(null);
-        alert.setContentText(SETTINGS_FILE_NOT_FOUND);
+        alert.setContentText(config.getString(StringKey.SETTINGS_CREATOR_SETTINGS_FILE_NOT_FOUND_TEXT));
 
         alert.showAndWait();
     }

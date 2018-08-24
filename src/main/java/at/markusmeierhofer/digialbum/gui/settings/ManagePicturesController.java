@@ -1,7 +1,8 @@
 package at.markusmeierhofer.digialbum.gui.settings;
 
 import at.markusmeierhofer.digialbum.VTDEntry;
-import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettings;
+import at.markusmeierhofer.digialbum.bl.config.StringKey;
+import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
 import at.markusmeierhofer.digialbum.dl.DataFileNotFoundException;
 import at.markusmeierhofer.digialbum.dl.VTDDataAccess;
 import javafx.beans.value.ObservableValue;
@@ -21,7 +22,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class VTDSettingsController {
+public class ManagePicturesController {
 
     @FXML
     private ResourceBundle resources;
@@ -73,7 +74,7 @@ public class VTDSettingsController {
 
     private ObservableList<VTDEntry> entries = FXCollections.observableArrayList();
     private VTDDataAccess dataAccess;
-    private VTDSettings settings;
+    private VTDConfig config;
     private boolean settingsSaved;
 
     @FXML
@@ -123,7 +124,7 @@ public class VTDSettingsController {
             imageUrlTF.setText(file.getAbsolutePath());
             VTDEntry selectedEntry = entryListView.getSelectionModel().getSelectedItem();
             if (selectedEntry != null) {
-                if (file.getParentFile().equals(new File(settings.getBasePath()))) {
+                if (file.getParentFile().equals(new File(config.getSettings().getBasePath()))) {
                     selectedEntry.setImageUrl(file.getName());
                 } else {
                     selectedEntry.setImageUrl(file.getAbsolutePath());
@@ -153,10 +154,23 @@ public class VTDSettingsController {
     @FXML
     void initialize() {
         injectionCheck();
+        firstInit();
+        reInit();
+    }
+
+    private void firstInit() {
         loadButtonIcons();
         dataAccess = VTDDataAccess.getInstance();
-        settings = VTDSettings.getInstance();
-        reInit();
+        config = VTDConfig.getInstance();
+        initializeTexts();
+    }
+
+    private void initializeTexts() {
+        chooseImageBtn.setText(config.getString(StringKey.DATA_PAGE_CHOOSE_IMAGE_BTN));
+        saveBtn.setText(config.getString(StringKey.DATA_PAGE_SAVE_BTN));
+        headerLbl.setText(config.getString(StringKey.DATA_PAGE_HEADER_LBL));
+        imageUrlLabel.setText(config.getString(StringKey.DATA_PAGE_IMAGE_URL_LBL));
+        descriptionLbl.setText(config.getString(StringKey.DATA_PAGE_DESCRIPTION_LBL));
     }
 
     private void reInit() {
@@ -218,17 +232,17 @@ public class VTDSettingsController {
     }
 
     private void injectionCheck() {
-        assert headerLbl != null : "fx:id=\"headerLbl\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert entryListView != null : "fx:id=\"entryListView\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert descriptionLbl != null : "fx:id=\"descriptionLbl\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert downBtn != null : "fx:id=\"downBtn\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert upBtn != null : "fx:id=\"upBtn\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert imageUrlTF != null : "fx:id=\"imageUrlTF\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert removeBtn != null : "fx:id=\"removeBtn\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert imageUrlLabel != null : "fx:id=\"imageUrlLabel\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert headerTF != null : "fx:id=\"headerTF\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert descriptionTA != null : "fx:id=\"descriptionTA\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert addBtn != null : "fx:id=\"addBtn\" was not injected: check your FXML file 'vtdsettings.fxml'.";
-        assert saveBtn != null : "fx:id=\"saveBtn\" was not injected: check your FXML file 'vtdsettings.fxml'.";
+        assert headerLbl != null : "fx:id=\"headerLbl\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert entryListView != null : "fx:id=\"entryListView\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert descriptionLbl != null : "fx:id=\"descriptionLbl\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert downBtn != null : "fx:id=\"downBtn\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert upBtn != null : "fx:id=\"upBtn\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert imageUrlTF != null : "fx:id=\"imageUrlTF\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert removeBtn != null : "fx:id=\"removeBtn\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert imageUrlLabel != null : "fx:id=\"imageUrlLabel\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert headerTF != null : "fx:id=\"headerTF\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert descriptionTA != null : "fx:id=\"descriptionTA\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert addBtn != null : "fx:id=\"addBtn\" was not injected: check your FXML file 'managePictures.fxml'.";
+        assert saveBtn != null : "fx:id=\"saveBtn\" was not injected: check your FXML file 'managePictures.fxml'.";
     }
 }

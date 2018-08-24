@@ -1,6 +1,7 @@
 package at.markusmeierhofer.digialbum.dl;
 
 import at.markusmeierhofer.digialbum.VTDEntry;
+import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
 import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,7 +31,7 @@ public class VTDDataAccess {
     private VTDSettings settings;
 
     private VTDDataAccess() {
-        settings = VTDSettings.getInstance();
+        settings = VTDConfig.getInstance().getSettings();
     }
 
     public List<VTDEntry> loadData() throws DataFileNotFoundException {
@@ -64,7 +65,7 @@ public class VTDDataAccess {
     private void writeDataFile(List<VTDEntry> entries) throws IOException {
         Path dataPath = Paths.get(settings.getDataFilename());
         if (Files.exists(dataPath)) {
-            Files.copy(dataPath, Paths.get(dataPath.toAbsolutePath().toString() + "_bkp"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(dataPath, Paths.get(dataPath.toAbsolutePath().toString() + ".bak"), StandardCopyOption.REPLACE_EXISTING);
         }
         FileOutputStream fos = new FileOutputStream(new File(settings.getDataFilename()));
         ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -79,7 +80,7 @@ public class VTDDataAccess {
     private void writeTextFile(List<VTDEntry> entries) throws IOException {
         Path backupPath = Paths.get(settings.getBackupFilename());
         if (Files.exists(backupPath)) {
-            Files.copy(backupPath, Paths.get(backupPath.toAbsolutePath().toString() + "_bkp"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(backupPath, Paths.get(backupPath.toAbsolutePath().toString() + ".bak"), StandardCopyOption.REPLACE_EXISTING);
         }
         FileWriter fw = new FileWriter(settings.getBackupFilename());
         if (entries != null) {
