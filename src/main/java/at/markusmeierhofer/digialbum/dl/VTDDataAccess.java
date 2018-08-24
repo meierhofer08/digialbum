@@ -1,7 +1,7 @@
 package at.markusmeierhofer.digialbum.dl;
 
 import at.markusmeierhofer.digialbum.VTDEntry;
-import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
+import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,17 +27,17 @@ public class VTDDataAccess {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private VTDConfig config;
+    private VTDSettings settings;
 
     private VTDDataAccess() {
-        config = VTDConfig.getInstance();
+        settings = VTDSettings.getInstance();
     }
 
     public List<VTDEntry> loadData() throws DataFileNotFoundException {
         List<VTDEntry> entries = null;
         try {
             //noinspection unchecked
-            entries = (ArrayList<VTDEntry>) new ObjectInputStream(new FileInputStream(new File(config.getDataFilename()))).readObject();
+            entries = (ArrayList<VTDEntry>) new ObjectInputStream(new FileInputStream(new File(settings.getDataFilename()))).readObject();
             if (entries != null) {
                 entries.forEach(VTDEntry::read);
             }
@@ -53,7 +53,7 @@ public class VTDDataAccess {
     public void saveData(List<VTDEntry> entries) {
         try {
             writeDataFile(entries);
-            if (config.isGenerateTextFile()) {
+            if (settings.isGenerateTextFile()) {
                 writeTextFile(entries);
             }
         } catch (IOException e) {
@@ -62,11 +62,11 @@ public class VTDDataAccess {
     }
 
     private void writeDataFile(List<VTDEntry> entries) throws IOException {
-        Path dataPath = Paths.get(config.getDataFilename());
+        Path dataPath = Paths.get(settings.getDataFilename());
         if (Files.exists(dataPath)) {
             Files.copy(dataPath, Paths.get(dataPath.toAbsolutePath().toString() + "_bkp"), StandardCopyOption.REPLACE_EXISTING);
         }
-        FileOutputStream fos = new FileOutputStream(new File(config.getDataFilename()));
+        FileOutputStream fos = new FileOutputStream(new File(settings.getDataFilename()));
         ObjectOutputStream oos = new ObjectOutputStream(fos);
         if (entries != null) {
             entries.forEach(VTDEntry::save);
@@ -77,11 +77,11 @@ public class VTDDataAccess {
     }
 
     private void writeTextFile(List<VTDEntry> entries) throws IOException {
-        Path backupPath = Paths.get(config.getBackupFilename());
+        Path backupPath = Paths.get(settings.getBackupFilename());
         if (Files.exists(backupPath)) {
             Files.copy(backupPath, Paths.get(backupPath.toAbsolutePath().toString() + "_bkp"), StandardCopyOption.REPLACE_EXISTING);
         }
-        FileWriter fw = new FileWriter(config.getBackupFilename());
+        FileWriter fw = new FileWriter(settings.getBackupFilename());
         if (entries != null) {
             for (VTDEntry entry : entries) {
                 fw.write(entry.getHeader().getValueSafe() + ";");

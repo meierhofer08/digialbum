@@ -1,4 +1,4 @@
-package at.markusmeierhofer.digialbum.bl.config;
+package at.markusmeierhofer.digialbum.bl.config.settings;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,12 +9,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-public class VTDConfig {
+public class VTDSettings {
     private static class InstanceHolder {
-        private static final VTDConfig INSTANCE = getDefaultConfig();
+        private static final VTDSettings INSTANCE = getDefaultConfig();
     }
 
-    public static VTDConfig getInstance() {
+    public static VTDSettings getInstance() {
         return InstanceHolder.INSTANCE;
     }
 
@@ -41,7 +41,7 @@ public class VTDConfig {
     private final String headerText;
     private final boolean generateTextFile;
 
-    public VTDConfig(String dataFilename, String backupFilename, String settingsFilename, String basePath, boolean useAnimations, String headerText, boolean generateTextFile) {
+    public VTDSettings(String dataFilename, String backupFilename, String settingsFilename, String basePath, boolean useAnimations, String headerText, boolean generateTextFile) {
         this.dataFilename = dataFilename;
         this.backupFilename = backupFilename;
         this.settingsFilename = settingsFilename;
@@ -51,7 +51,7 @@ public class VTDConfig {
         this.generateTextFile = generateTextFile;
     }
 
-    private static VTDConfig getDefaultConfig() {
+    private static VTDSettings getDefaultConfig() {
         String settingsName = getDefaultSettingsName();
         String defaultBasePath = Paths.get(".").toAbsolutePath().toString();
         defaultBasePath = defaultBasePath.substring(0, defaultBasePath.length() - 1);
@@ -77,7 +77,7 @@ public class VTDConfig {
             boolean generateTextFile;
             if (generateTextFileProperty == null) {
                 LOGGER.warn(GENERATE_TEXT_FILE_PROPERTY + " property not found, using default (" +
-                        DEFAULT_GENERATE_TEXT_FILE+ ")!");
+                        DEFAULT_GENERATE_TEXT_FILE + ")!");
                 generateTextFile = DEFAULT_USE_ANIMATIONS;
             } else {
                 generateTextFile = Boolean.parseBoolean(generateTextFileProperty);
@@ -89,7 +89,7 @@ public class VTDConfig {
                 headerText = DEFAULT_HEADER_TEXT;
             }
 
-            return new VTDConfig(basePath + DATA_FILE, basePath + BACKUP_FILE,
+            return new VTDSettings(basePath + DATA_FILE, basePath + BACKUP_FILE,
                     settingsName, basePath, useAnimations, headerText, generateTextFile);
         } catch (IOException e) {
             LOGGER.catching(e);

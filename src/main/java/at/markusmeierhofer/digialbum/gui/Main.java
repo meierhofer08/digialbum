@@ -1,7 +1,7 @@
 package at.markusmeierhofer.digialbum.gui;
 
-import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
-import at.markusmeierhofer.digialbum.bl.config.VTDSettingsCreator;
+import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettings;
+import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettingsCreator;
 import at.markusmeierhofer.digialbum.gui.mainpage.VTDController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -14,9 +14,9 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         VTDSettingsCreator.setGuiAvailable(true);
-        VTDConfig config = VTDConfig.getInstance();
+        VTDSettings settings = VTDSettings.getInstance();
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/vtd.fxml"));
-        primaryStage.setTitle(config.getHeaderText());
+        primaryStage.setTitle(settings.getHeaderText());
         primaryStage.setScene(new Scene(loader.load(), 1000, 710));
         primaryStage.show();
         vtdController = loader.getController();

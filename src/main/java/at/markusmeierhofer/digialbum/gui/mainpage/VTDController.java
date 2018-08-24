@@ -1,7 +1,7 @@
 package at.markusmeierhofer.digialbum.gui.mainpage;
 
 import at.markusmeierhofer.digialbum.VTDEntry;
-import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
+import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettings;
 import at.markusmeierhofer.digialbum.dl.DataFileNotFoundException;
 import at.markusmeierhofer.digialbum.dl.VTDDataAccess;
 import at.markusmeierhofer.digialbum.gui.helpers.MultiImageAnimator;
@@ -93,7 +93,7 @@ public class VTDController {
 
     private List<VTDEntry> entries;
     private int currentPosition;
-    private VTDConfig config;
+    private VTDSettings settings;
     private VTDEntry currentLeftEntry;
     private VTDEntry currentRightEntry;
     private ExecutorService animationExecutor;
@@ -153,8 +153,8 @@ public class VTDController {
     }
 
     private void firstInit() {
-        config = VTDConfig.getInstance();
-        headerLbl.setText(config.getHeaderText());
+        settings = VTDSettings.getInstance();
+        headerLbl.setText(settings.getHeaderText());
         animationExecutor = Executors.newSingleThreadExecutor();
         imagePreviewList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         imagePreviewList.getSelectionModel().selectedItemProperty().addListener(
@@ -274,7 +274,7 @@ public class VTDController {
 
         double fitWidth;
         double fitHeight;
-        if (config.isUseAnimations()) {
+        if (settings.isUseAnimations()) {
             if (currentMultiImageAnimator != null) {
                 currentMultiImageAnimator.stop();
             }
@@ -287,7 +287,7 @@ public class VTDController {
         }
         loadFullSizeImage(leftEntry, leftImageview, leftPlaceholder, fitWidth, fitHeight);
         loadFullSizeImage(rightEntry, rightImageview, rightPlaceholder, fitWidth, fitHeight);
-        if (config.isUseAnimations()) {
+        if (settings.isUseAnimations()) {
             animationExecutor.execute(currentMultiImageAnimator);
         }
         checkDisable();
@@ -350,7 +350,7 @@ public class VTDController {
     private String getResolvedImageString(String imageString) {
         String resolvedImageString = imageString;
         if (!resolvedImageString.contains(":\\")) {
-            resolvedImageString = config.getBasePath() + resolvedImageString;
+            resolvedImageString = settings.getBasePath() + resolvedImageString;
         }
 
         return resolvedImageString;
@@ -368,7 +368,7 @@ public class VTDController {
         Alert alert = new Alert(AlertType.ERROR);
         alert.setTitle(DATAFILE_NOT_FOUND_HEADER);
         alert.setHeaderText(null);
-        alert.setContentText(String.format(DATAFILE_NOT_FOUND, config.getBasePath()));
+        alert.setContentText(String.format(DATAFILE_NOT_FOUND, settings.getBasePath()));
 
         alert.showAndWait();
     }

@@ -1,7 +1,7 @@
 package at.markusmeierhofer.digialbum.gui.settings;
 
 import at.markusmeierhofer.digialbum.VTDEntry;
-import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
+import at.markusmeierhofer.digialbum.bl.config.settings.VTDSettings;
 import at.markusmeierhofer.digialbum.dl.DataFileNotFoundException;
 import at.markusmeierhofer.digialbum.dl.VTDDataAccess;
 import javafx.beans.value.ObservableValue;
@@ -73,7 +73,7 @@ public class VTDSettingsController {
 
     private ObservableList<VTDEntry> entries = FXCollections.observableArrayList();
     private VTDDataAccess dataAccess;
-    private VTDConfig config;
+    private VTDSettings settings;
     private boolean settingsSaved;
 
     @FXML
@@ -123,7 +123,7 @@ public class VTDSettingsController {
             imageUrlTF.setText(file.getAbsolutePath());
             VTDEntry selectedEntry = entryListView.getSelectionModel().getSelectedItem();
             if (selectedEntry != null) {
-                if (file.getParentFile().equals(new File(config.getBasePath()))) {
+                if (file.getParentFile().equals(new File(settings.getBasePath()))) {
                     selectedEntry.setImageUrl(file.getName());
                 } else {
                     selectedEntry.setImageUrl(file.getAbsolutePath());
@@ -155,7 +155,7 @@ public class VTDSettingsController {
         injectionCheck();
         loadButtonIcons();
         dataAccess = VTDDataAccess.getInstance();
-        config = VTDConfig.getInstance();
+        settings = VTDSettings.getInstance();
         reInit();
     }
 
