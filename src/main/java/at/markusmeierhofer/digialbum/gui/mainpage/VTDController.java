@@ -1,15 +1,17 @@
-package at.markusmeierhofer.digialbum;
+package at.markusmeierhofer.digialbum.gui.mainpage;
 
-import at.markusmeierhofer.digialbum.config.VTDConfig;
-import at.markusmeierhofer.digialbum.dataaccess.DataFileNotFoundException;
-import at.markusmeierhofer.digialbum.dataaccess.VTDDataAccess;
+import at.markusmeierhofer.digialbum.VTDEntry;
+import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
+import at.markusmeierhofer.digialbum.dl.DataFileNotFoundException;
+import at.markusmeierhofer.digialbum.dl.VTDDataAccess;
+import at.markusmeierhofer.digialbum.gui.helpers.MultiImageAnimator;
+import at.markusmeierhofer.digialbum.gui.settings.VTDSettingsController;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
@@ -22,6 +24,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class VTDController {
@@ -92,16 +96,19 @@ public class VTDController {
     private VTDConfig config;
     private VTDEntry currentLeftEntry;
     private VTDEntry currentRightEntry;
+    private ExecutorService animationExecutor;
+    private MultiImageAnimator currentMultiImageAnimator;
 
     @FXML
     void settingsBtnActionPerformed(ActionEvent event) {
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/vtdsettings.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vtdsettings.fxml"));
             Stage stage = new Stage();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(loader.load()));
             stage.setTitle("Einstellungen");
             stage.showAndWait();
-            if (SettingsSaved.areSettingsSaved()) {
+            VTDSettingsController settingsController = loader.getController();
+            if (settingsController.areSettingsSaved()) {
                 LOGGER.info("ReInit Main View");
                 reInit();
             } else {
@@ -148,13 +155,20 @@ public class VTDController {
     private void firstInit() {
         config = VTDConfig.getInstance();
         headerLbl.setText(config.getHeaderText());
+        animationExecutor = Executors.newSingleThreadExecutor();
+        imagePreviewList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        imagePreviewList.getSelectionModel().selectedItemProperty().addListener(
+                (ObservableValue<? extends VTDEntry> observable, VTDEntry oldValue, VTDEntry newValue) ->
+                {
+                    if (!Objects.equals(currentLeftEntry, newValue) && !Objects.equals(currentRightEntry, newValue)) {
+                        showEntryPageFromPreviewEntry(newValue);
+                    }
+                });
     }
 
     private void initializeImagePreviews() {
         Map<VTDEntry, Optional<ImageView>> preloadedImages = getPreloadedImages(entries);
 
-        imagePreviewList.setItems(FXCollections.emptyObservableList());
-        imagePreviewList.setCellFactory(null);
         imagePreviewList.scrollTo(0);
         imagePreviewList.setItems(FXCollections.observableArrayList(entries));
         imagePreviewList.setCellFactory((ListView<VTDEntry> param) -> new ListCell<VTDEntry>() {
@@ -175,14 +189,6 @@ public class VTDController {
                 }
             }
         });
-        imagePreviewList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        imagePreviewList.getSelectionModel().selectedItemProperty().addListener(
-                (ObservableValue<? extends VTDEntry> observable, VTDEntry oldValue, VTDEntry newValue) ->
-                {
-                    if (!Objects.equals(currentLeftEntry, newValue) && !Objects.equals(currentRightEntry, newValue)) {
-                        showEntryPageFromPreviewEntry(newValue);
-                    }
-                });
     }
 
     private void showEntryPageFromPreviewEntry(VTDEntry selectedPreviewEntry) {
@@ -244,6 +250,10 @@ public class VTDController {
         currentLeftEntry = leftEntry;
         currentRightEntry = rightEntry;
 
+        // dirty fix for the pictures sometimes freezing when animated
+        leftImageview.setVisible(false);
+        rightImageview.setVisible(false);
+
         if (leftEntry != null) {
             leftImageview.setImage(null);
             leftDateLabel.setText(leftEntry.getHeader().getValue());
@@ -261,12 +271,26 @@ public class VTDController {
             rightTextarea.setText("");
             rightImageview.setImage(null);
         }
-        loadFullSizeImage(leftEntry, leftImageview, leftPlaceholder);
-        loadFullSizeImage(rightEntry, rightImageview, rightPlaceholder);
-        checkDisable();
+
+        double fitWidth;
+        double fitHeight;
         if (config.isUseAnimations()) {
-            new MultiImageAnimator(IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, leftImageview, rightImageview).start();
+            if (currentMultiImageAnimator != null) {
+                currentMultiImageAnimator.stop();
+            }
+            currentMultiImageAnimator = new MultiImageAnimator(IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, leftImageview, rightImageview);
+            fitWidth = currentMultiImageAnimator.getStartWidth();
+            fitHeight = currentMultiImageAnimator.getStartHeight();
+        } else {
+            fitWidth = IMAGE_FIT_WIDTH;
+            fitHeight = IMAGE_FIT_HEIGHT;
         }
+        loadFullSizeImage(leftEntry, leftImageview, leftPlaceholder, fitWidth, fitHeight);
+        loadFullSizeImage(rightEntry, rightImageview, rightPlaceholder, fitWidth, fitHeight);
+        if (config.isUseAnimations()) {
+            animationExecutor.execute(currentMultiImageAnimator);
+        }
+        checkDisable();
     }
 
     private Optional<ImageView> loadPreviewImage(VTDEntry entry, ImageView imageView, Label placeholder) {
@@ -279,8 +303,8 @@ public class VTDController {
         }
     }
 
-    private void loadFullSizeImage(VTDEntry entry, ImageView imageView, Label placeholder) {
-        loadImage(entry, imageView, placeholder, IMAGE_FIT_WIDTH, IMAGE_FIT_HEIGHT, IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
+    private void loadFullSizeImage(VTDEntry entry, ImageView imageView, Label placeholder, double fitWidth, double fitHeight) {
+        loadImage(entry, imageView, placeholder, fitWidth, fitHeight, IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT,
                 true, false);
     }
 
@@ -347,5 +371,9 @@ public class VTDController {
         alert.setContentText(String.format(DATAFILE_NOT_FOUND, config.getBasePath()));
 
         alert.showAndWait();
+    }
+
+    public void shutdown() {
+        animationExecutor.shutdown();
     }
 }

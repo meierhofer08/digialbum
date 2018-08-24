@@ -1,4 +1,4 @@
-package at.markusmeierhofer.digialbum.config;
+package at.markusmeierhofer.digialbum.bl.config;
 
 import javafx.scene.control.Alert;
 import org.apache.logging.log4j.LogManager;

@@ -1,4 +1,4 @@
-package at.markusmeierhofer.digialbum.config;
+package at.markusmeierhofer.digialbum.bl.config;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,9 +25,11 @@ public class VTDConfig {
     private static final String BASE_PATH_PROPERTY = "vtd.basePath";
     private static final String USE_ANIMATIONS_PROPERTY = "vtd.useAnimations";
     private static final String HEADER_TEXT_PROPERTY = "vtd.headerText";
+    private static final String GENERATE_TEXT_FILE_PROPERTY = "vtd.generateTextFile";
     // Default settings values
     private static final boolean DEFAULT_USE_ANIMATIONS = true;
     private static final String DEFAULT_HEADER_TEXT = "Unsere Geschichte";
+    private static final boolean DEFAULT_GENERATE_TEXT_FILE = false;
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -37,14 +39,16 @@ public class VTDConfig {
     private final String basePath;
     private final boolean useAnimations;
     private final String headerText;
+    private final boolean generateTextFile;
 
-    public VTDConfig(String dataFilename, String backupFilename, String settingsFilename, String basePath, boolean useAnimations, String headerText) {
+    public VTDConfig(String dataFilename, String backupFilename, String settingsFilename, String basePath, boolean useAnimations, String headerText, boolean generateTextFile) {
         this.dataFilename = dataFilename;
         this.backupFilename = backupFilename;
         this.settingsFilename = settingsFilename;
         this.basePath = basePath;
         this.useAnimations = useAnimations;
         this.headerText = headerText;
+        this.generateTextFile = generateTextFile;
     }
 
     private static VTDConfig getDefaultConfig() {
@@ -52,10 +56,6 @@ public class VTDConfig {
         String defaultBasePath = Paths.get(".").toAbsolutePath().toString();
         defaultBasePath = defaultBasePath.substring(0, defaultBasePath.length() - 1);
         System.out.println(defaultBasePath);
-        if (settingsName == null) {
-            return new VTDConfig(defaultBasePath + DATA_FILE, defaultBasePath + BACKUP_FILE,
-                    SETTINGS_FILE, defaultBasePath, DEFAULT_USE_ANIMATIONS, DEFAULT_HEADER_TEXT);
-        }
         try (FileReader fileReader = new FileReader(settingsName)) {
             Properties vtdProperties = new Properties();
             vtdProperties.load(fileReader);
@@ -73,6 +73,15 @@ public class VTDConfig {
             } else {
                 useAnimations = Boolean.parseBoolean(useAnimationsString);
             }
+            String generateTextFileProperty = vtdProperties.getProperty(GENERATE_TEXT_FILE_PROPERTY);
+            boolean generateTextFile;
+            if (generateTextFileProperty == null) {
+                LOGGER.warn(GENERATE_TEXT_FILE_PROPERTY + " property not found, using default (" +
+                        DEFAULT_GENERATE_TEXT_FILE+ ")!");
+                generateTextFile = DEFAULT_USE_ANIMATIONS;
+            } else {
+                generateTextFile = Boolean.parseBoolean(generateTextFileProperty);
+            }
             String headerText = vtdProperties.getProperty(HEADER_TEXT_PROPERTY);
             if (headerText == null) {
                 LOGGER.warn(HEADER_TEXT_PROPERTY + " property not found, using default (" +
@@ -81,7 +90,7 @@ public class VTDConfig {
             }
 
             return new VTDConfig(basePath + DATA_FILE, basePath + BACKUP_FILE,
-                    settingsName, basePath, useAnimations, headerText);
+                    settingsName, basePath, useAnimations, headerText, generateTextFile);
         } catch (IOException e) {
             LOGGER.catching(e);
             throw new RuntimeException("Error when loading VTDSettings!");
@@ -116,5 +125,9 @@ public class VTDConfig {
 
     public String getHeaderText() {
         return headerText;
+    }
+
+    public boolean isGenerateTextFile() {
+        return generateTextFile;
     }
 }

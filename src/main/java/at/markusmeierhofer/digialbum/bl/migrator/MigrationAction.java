@@ -1,4 +1,4 @@
-package at.markusmeierhofer.digialbum.migrator;
+package at.markusmeierhofer.digialbum.bl.migrator;
 
 import at.markusmeierhofer.digialbum.VTDEntry;
 

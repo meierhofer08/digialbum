@@ -1,7 +1,7 @@
-package at.markusmeierhofer.digialbum.migrator;
+package at.markusmeierhofer.digialbum.bl.migrator;
 
-import at.markusmeierhofer.digialbum.dataaccess.DataFileNotFoundException;
-import at.markusmeierhofer.digialbum.dataaccess.VTDDataAccess;
+import at.markusmeierhofer.digialbum.dl.DataFileNotFoundException;
+import at.markusmeierhofer.digialbum.dl.VTDDataAccess;
 
 import java.util.stream.Collectors;
 

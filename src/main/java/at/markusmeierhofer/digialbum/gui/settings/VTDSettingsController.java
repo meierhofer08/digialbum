@@ -1,8 +1,9 @@
-package at.markusmeierhofer.digialbum;
+package at.markusmeierhofer.digialbum.gui.settings;
 
-import at.markusmeierhofer.digialbum.config.VTDConfig;
-import at.markusmeierhofer.digialbum.dataaccess.DataFileNotFoundException;
-import at.markusmeierhofer.digialbum.dataaccess.VTDDataAccess;
+import at.markusmeierhofer.digialbum.VTDEntry;
+import at.markusmeierhofer.digialbum.bl.config.VTDConfig;
+import at.markusmeierhofer.digialbum.dl.DataFileNotFoundException;
+import at.markusmeierhofer.digialbum.dl.VTDDataAccess;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -73,6 +74,7 @@ public class VTDSettingsController {
     private ObservableList<VTDEntry> entries = FXCollections.observableArrayList();
     private VTDDataAccess dataAccess;
     private VTDConfig config;
+    private boolean settingsSaved;
 
     @FXML
     void addBtnActionPerformed(ActionEvent event) {
@@ -132,7 +134,7 @@ public class VTDSettingsController {
 
     @FXML
     void saveBtnActionPerformed(ActionEvent event) {
-        SettingsSaved.setSettingsSaved(true);
+        settingsSaved = true;
         dataAccess.saveData(entries);
         close(event);
     }
@@ -168,7 +170,11 @@ public class VTDSettingsController {
         downBtn.setDisable(true);
         entryGridPane.setDisable(true);
         initEntryListView();
-        SettingsSaved.setSettingsSaved(false);
+        settingsSaved = false;
+    }
+
+    public boolean areSettingsSaved() {
+        return settingsSaved;
     }
 
     private void initEntryListView() {
