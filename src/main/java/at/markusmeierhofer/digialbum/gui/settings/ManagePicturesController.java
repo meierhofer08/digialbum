@@ -76,6 +76,7 @@ public class ManagePicturesController {
     private VTDDataAccess dataAccess;
     private VTDConfig config;
     private boolean settingsSaved;
+    private File lastDirectory;
 
     @FXML
     void addBtnActionPerformed(ActionEvent event) {
@@ -112,15 +113,19 @@ public class ManagePicturesController {
 
     private void chooseImage(Stage stage) {
         FileChooser fileChooser = new FileChooser();
+        if (lastDirectory != null) {
+            fileChooser.setInitialDirectory(lastDirectory);
+        }
         fileChooser.setTitle("Bitte Bild auswählen...");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Alle Bildformate",
-                        "*.jpg", "*.png", "*.tiff", "*.gif"),
-                new FileChooser.ExtensionFilter("JPG", "*.jpg"),
+                        "*.jpg", "*.png", "*.tiff", "*.gif", "*.jpeg"),
+                new FileChooser.ExtensionFilter("JPG", "*.jpg", "*.jpeg"),
                 new FileChooser.ExtensionFilter("PNG", "*.png")
         );
         File file = fileChooser.showOpenDialog(stage);
         if (file != null) {
+            lastDirectory = file.getParentFile();
             imageUrlTF.setText(file.getAbsolutePath());
             VTDEntry selectedEntry = entryListView.getSelectionModel().getSelectedItem();
             if (selectedEntry != null) {
